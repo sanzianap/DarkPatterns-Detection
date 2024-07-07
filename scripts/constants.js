@@ -1,0 +1,1 @@
+export const COOKIE_DIV_KEYWORDS = ['cookie', 'gdpr'];
