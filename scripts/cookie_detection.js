@@ -16,50 +16,47 @@ const appendToString = (word, stringToAppend) => {
     word = word.concat(stringToAppend); s
 }
 
-const computeBlackList = (keywordsArray) => {
+const computeBlackList = (keywordsArray, domElementsToBeChecked) => {
     let blackListXpath = " and not(ancestor::div[";
-    keywordsArray.forEach(keyword => {
-        blackListXpath = blackListXpath.concat("contains(@id, '", keyword, "') or ");
+    domElementsToBeChecked.forEach(domElement => {
+        keywordsArray.forEach(keyword => {
+            blackListXpath = blackListXpath.concat("contains(@", domElement, ", '", keyword, "') or ");
+        });
     });
-
+    
     blackListXpath = blackListXpath.slice(0, -4) + "])]";
     return blackListXpath;
 }
+
+const insertDomElementIfSuitable = (list, domElement) => {
+    let isPresent = list.some(element => {element.id === domElement.id});
+
+    if(isPresent || domElement.clientHeight <= 0 || domElement.clientHeight <= 0) {
+        return;
+    }
+    list.push(domElement);
+    // check if id>class>aria-label
+};
 // --------------------------------- Functions section end ------------------------------
 
 let allKeywords = [], divsRetreived = [];
 const cookieDivKeywords = ['cookie', 'gdpr'];
+const fallbackMechanisElements = ['id', 'class', 'aria-label'];
 
 cookieDivKeywords.forEach(keyword => getAllCasesForKeyword(keyword, allKeywords));
 // console.log(allKeywords);
 // XPath expression to select divs with 'cookie' in their id
-allKeywords.forEach(keyword => {
-    const xpath = "//div[contains(@id, '" + keyword + "')" + computeBlackList(allKeywords);
-    const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-    for (let i = 0; i < result.snapshotLength; i++) {
-        let div = result.snapshotItem(i);
-        divsRetreived.push(div);
-    }
-    //console.log(result.snapshotItem);
-    //divsRetreived.push.apply(divsRetreived, result.snapshotItem);
+let blackList = computeBlackList(allKeywords, fallbackMechanisElements);
+fallbackMechanisElements.forEach(domElement => {
+    allKeywords.forEach(keyword => {
+        const xpath = "//div[contains(@" + domElement + ", '" + keyword + "')" + blackList;
+        const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+        for (let i = 0; i < result.snapshotLength; i++) {
+            let div = result.snapshotItem(i);
+            insertDomElementIfSuitable(divsRetreived, div);
+        }
+    });
 });
 
 console.log(divsRetreived);
 divsRetreived.forEach(div => console.log("width: " + div.clientWidth + " height: " + div.clientHeight));
-
-//const xpath = "//div[contains(@id,'cookie') and not(ancestor::div[contains(@id, 'cookie') or contains(@id, 'Cookie') or contains(@id, 'COOKIE') or contains(@id, 'gdpr') or contains(@id, 'Gdpr') or contains(@id, 'GDPR')])]";
-//const xpath = "//div[contains(@id,'cookie') and not(ancestor::div[contains(@id, 'cookie') or contains(@id, 'Cookie') or contains(@id, 'COOKIE') or contains(@id, 'gdpr') or contains(@id, 'Gdpr') or contains(@id, 'GDPR')])]";
-//const xpath = "//div[contains(@id,'cookie') and not(ancestor::div[contains(@id, 'cookie') or contains(@id, 'Cookie') or contains(@id, 'COOKIE') or contains(@id, 'gdpr') or contains(@id, 'Gdpr') or contains(@id, 'GDPR')])]";
-//const xpath = "//div[contains(@id,'cookie') and not(ancestor::div[contains(@id, 'cookie') or contains(@id, 'Cookie') or contains(@id, 'COOKIE') or contains(@id, 'gdpr') or contains(@id, 'Gdpr') or contains(@id, 'GDPR')])]";
-
-// Evaluate the XPath expression
-//const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-
-// for (let i = 0; i < result.snapshotLength; i++) {
-//     let div = result.snapshotItem(i);
-//     console.log(div);
-// }
-
-// function getAllCasesForKeyword(keyword) {
-//
-// }
