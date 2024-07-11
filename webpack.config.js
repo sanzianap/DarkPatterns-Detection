@@ -1,5 +1,6 @@
 // webpack.config.js
 const path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
   entry: './scripts/cookie_detection.js',
@@ -21,4 +22,18 @@ module.exports = {
       },
     ],
   },
+  // optimization: {
+  //   minimize: true,
+  //   minimizer: [
+  //     new TerserPlugin({
+  //       parallel: true,
+  //       terserOptions: {
+  //         ecma: 6,
+  //         output: { 
+  //            ascii_only: true 
+  //         },
+  //       },
+  //     }),
+  //   ],
+  // },
 };

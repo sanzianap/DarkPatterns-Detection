@@ -1,4 +1,0 @@
-const _ = require("lodash");
-
-require is not defined
-https://stackoverflow.com/questions/19059580/browser-uncaught-referenceerror-require-is-not-defined
