@@ -43,31 +43,24 @@ const checkIfIdExists = (list, domElement) => {
 }
 const checkIfIdExistsInMap = (iterator, domElement) => {
     let res;
-    while(true) {
+    while (true) {
         res = iterator.next();
         if (res.done) {
             return false;
         }
-        // console.log("initial");
-        // console.log(res);
         var value = res.value.entries().next().value[0];
-        // console.log("after trying to take the value");
-        // console.log(value);
         if (value.id === domElement.id) {
             return true;
         }
     }
 }
 const insertDomElementIfSuitable = (list, domElement) => {
-    let isPresent = checkIfIdExists(list, domElement);
+    let isPresent = checkIfIdExistsInMap(list, domElement);
 
     if (isPresent || domElement.clientHeight <= 0 || domElement.clientHeight <= 0) {
         return;
     }
-    list.push(domElement);
     return true;
-    // check if id>class>aria-label mare smechera esti :>
-    // 
 }
 // const getApiSynonyms = () => {
 //     app.get('/synonyms/:word', async (req, res) => {
@@ -84,26 +77,12 @@ const insertDomElementIfSuitable = (list, domElement) => {
 const getBestElement = (map) => {
     var max = -10, position = 0;
     for (var [key, value] of map.entries()) {
-        // console.log(value.entries().next().value[1]);
+
         if (value.entries().next().value[1] > max) {
             max = value.entries().next().value[1];
             position = key;
         }
     }
-    // let elements = map.values();
-    // let currentElement;
-    // while(true) {
-    //     currentElement = elements.next();
-    //     if (currentElement.done) {
-    //         break;
-    //     }
-    //     var value = currentElement.value.entries().next().value[0];
-    //     var currentWeight = currentElement.value.entries().next().value[1];
-    //     if (currentWeight > max) {
-    //         position = 
-    //     }
-    // }
-    // console.log(position);
     return map.get(position).entries().next().value[0];
 }
 const getSpecifiedElement = (initialArray) => {
@@ -113,9 +92,9 @@ const getSpecifiedElement = (initialArray) => {
     let index = 0;
     allKeywordsArray.forEach(keyword => {
         let maxWeight = WORDS.FALLBACKMECHANISM_ELEMENTS.length * 10;
-        for(var position = 0; position < WORDS.FALLBACKMECHANISM_ELEMENTS.length; position++) {
+        for (var position = 0; position < WORDS.FALLBACKMECHANISM_ELEMENTS.length; position++) {
             var currentElement = WORDS.FALLBACKMECHANISM_ELEMENTS[position];
-            var currentWeight = maxWeight - position * 10; 
+            var currentWeight = maxWeight - position * 10;
             var xpath = "//*[self::div or self::button][contains(@" + currentElement + ", '" + keyword + "')]";
             let result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
             for (let i = 0; i < result.snapshotLength; i++) {
@@ -128,86 +107,98 @@ const getSpecifiedElement = (initialArray) => {
             }
         }
     });
-    console.log("BEFORE FILTERING");
-    console.log(domElementsFound);
     if (domElementsFound.size > 1) {
-        identifyBestFittingActionButton(domElementsFound);
+        identifyBestFittingActionButton(domElementsFound, true);
     }
     return getBestElement(domElementsFound);
 }
-const calculateWeight = (domElement, weight) => {
-    //console.log(domElement + ' ' + weight);
+const calculateWeight = (domElement, weight, checkForButton) => {
     var minWeight = weight;
-    // "id: " + div.id + " class: " + div.className + " element type: " + div.tagName + " ariaLabel:" + div.ariaLabel
-    if (domElement.tagName === WORDS.BUTTON_TAG) {
-        minWeight += 20;
-    } else {
-        minWeight += 10;
-    }
-    for (var idx = 0; idx < ALL_KEYWORDS.length; idx++) {
-        if (domElement.id.includes(ALL_KEYWORDS[idx])) {
-            minWeight++;
-            break;
+    if (checkForButton) {
+        if (domElement.tagName === WORDS.BUTTON_TAG) {
+            minWeight += 20;
+        } else {
+            minWeight += 10;
         }
-    }
-    let listfWordsForAll = constructAllKeywords(WORDS.ALL);
-    for (var idx = 0; idx < listfWordsForAll.length; idx++) {
-        if (domElement.id.includes(listfWordsForAll[idx])) {
-            minWeight++;
-            break;
+        for (var idx = 0; idx < ALL_KEYWORDS.length; idx++) {
+            if (domElement.id.includes(ALL_KEYWORDS[idx])) {
+                minWeight++;
+                break;
+            }
+        }
+        let listfWordsForAll = constructAllKeywords(WORDS.ALL);
+        for (var idx = 0; idx < listfWordsForAll.length; idx++) {
+            if (domElement.id.includes(listfWordsForAll[idx])) {
+                minWeight++;
+                break;
+            }
         }
     }
     let listfWordsForWrap = constructAllKeywords(WORDS.WRAP_KEYWORD);
     for (var idx = 0; idx < listfWordsForWrap.length; idx++) {
         if (domElement.id.includes(listfWordsForWrap[idx])) {
-            minWeight -= 5;
+            minWeight -= 10;
             break;
         }
     }
     return minWeight;
 }
-const identifyBestFittingActionButton = (possibleOptionsMap) => {
-    // for(var position = 0; position < possibleOptionsArray.length; position++) {
-    //     var weight = calculateWeight(possibleOptionsArray[position]);
-    //     weightMap.set(position, weight);
-    // }
+const identifyBestFittingActionButton = (possibleOptionsMap, checkForButton) => {
     var elements = possibleOptionsMap.values();
     let currentElement;
-    while(true) {
+    while (true) {
         currentElement = elements.next();
         if (currentElement.done) {
             break;
         }
         var value = currentElement.value.entries().next().value[0];
         var currentWeight = currentElement.value.entries().next().value[1];
-        var weight = calculateWeight(value, currentWeight);
-        //currentWeight = weight;
-        //console.log("AFTER2 "+currentWeight);
+        var weight = calculateWeight(value, currentWeight, checkForButton);
         currentElement.value.set(value, weight);
     }
-} 
+}
+
+const detectCookieMainDiv = () => {
+    let divsMap = new Map();
+
+    // XPath expression to select divs with 'cookie' in their id
+    let blackList = computeBlackList(ALL_KEYWORDS, WORDS.FALLBACKMECHANISM_ELEMENTS);
+    let index = 0;
+    for (var position = 0; position < WORDS.FALLBACKMECHANISM_ELEMENTS.length; position++) {
+        var domElement = WORDS.FALLBACKMECHANISM_ELEMENTS[position];
+        var currentWeight = maxWeight - position * 10;
+        let maxWeight = WORDS.FALLBACKMECHANISM_ELEMENTS.length * 10;
+        ALL_KEYWORDS.forEach(keyword => {
+            var xpath = "//div[contains(@" + domElement + ", '" + keyword + "')" + blackList;
+            let result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+            for (let i = 0; i < result.snapshotLength; i++) {
+                var div = result.snapshotItem(i);
+                if (div.children.length === 1 && div.id.includes(div.children[0].id)) {
+                    div = div.children[0];
+                }
+                if (insertDomElementIfSuitable(divsMap.values(), div)) {
+                    var value = new Map();
+                    value.set(div, currentWeight);
+                    divsMap.set(index, value);
+                }
+            }
+        });
+    }
+    if(divsMap.size > 1) {
+        identifyBestFittingActionButton(divsMap);
+    }
+    return getBestElement(divsMap);
+}
 
 // --------------------------------- Functions section end ------------------------------
 
-let  divsRetreived = [];
+let divsRetreived = detectCookieMainDiv();
+console.log(divsRetreived);
 
-// XPath expression to select divs with 'cookie' in their id
-let blackList = computeBlackList(ALL_KEYWORDS, WORDS.FALLBACKMECHANISM_ELEMENTS);
-WORDS.FALLBACKMECHANISM_ELEMENTS.forEach(domElement => {
-    ALL_KEYWORDS.forEach(keyword => {
-        var xpath = "//div[contains(@" + domElement + ", '" + keyword + "')" + blackList;
-        let result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-        for (let i = 0; i < result.snapshotLength; i++) {
-            var div = result.snapshotItem(i);
-            insertDomElementIfSuitable(divsRetreived, div);
-        }
-    });
-});
-
-divsRetreived.forEach(div => {
-    console.log("width: " + div.clientWidth + " height: " + div.clientHeight);
-    div.style.border = "2px solid red";
-});
+// divsRetreived.forEach(div => {
+//     console.log("width: " + div.clientWidth + " height: " + div.clientHeight);
+//     div.style.border = "2px solid red";
+// });
 
 let rejectButtonsMap = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
 console.log("rejectButtonsMap");
