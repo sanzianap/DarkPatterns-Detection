@@ -1,17 +1,6 @@
 // THIS DOESN'T WORK FOR NOW; See .improvements/moduleType
 import { WORDS } from './constants.js';
 import _ from 'lodash';
-//import cors from 'cors';
-//import thesaurus from 'powerthesaurus-api';
-
-// const corsOptions = {
-//     origin: '*',
-//     credentials: true,            //access-control-allow-credentials:true
-//     optionSuccessStatus: 200,
-// }
-
-// var app = express();
-// app.use(cors(corsOptions));
 
 // --------------------------------- Functions section ------------------------------
 const constructAllKeywords = (listOfInitialKeywords) => {
@@ -38,9 +27,6 @@ const computeBlackList = (keywordsArray, domElementsToBeChecked) => {
     blackListXpath = blackListXpath.slice(0, -4) + "])]";
     return blackListXpath;
 }
-const checkIfIdExists = (list, domElement) => {
-    return list.some(element => element.id === domElement.id);
-}
 const checkIfIdExistsInMap = (iterator, domElement) => {
     let res;
     while (true) {
@@ -62,28 +48,18 @@ const insertDomElementIfSuitable = (list, domElement) => {
     }
     return true;
 }
-// const getApiSynonyms = () => {
-//     app.get('/synonyms/:word', async (req, res) => {
-//         const word = req.params.word;
-//         try {
-//           const synonyms = await powerthesaurus.synonyms(word);
-//           res.json(synonyms);
-//         } catch (error) {
-//           console.error(error);
-//           res.status(500).json({ error: 'Failed to fetch data from PowerThesaurus API' });
-//         }
-//       });
-// }
 const getBestElement = (map) => {
-    var max = -10, position = 0;
+    var max = -10, position = -1;
     for (var [key, value] of map.entries()) {
-
         if (value.entries().next().value[1] > max) {
             max = value.entries().next().value[1];
             position = key;
         }
     }
-    return map.get(position).entries().next().value[0];
+    if (position > -1) {
+        return map.get(position).entries().next().value[0];
+    }
+    return undefined;
 }
 const getSpecifiedElement = (initialArray) => {
     let allKeywordsArray = [];
@@ -112,36 +88,42 @@ const getSpecifiedElement = (initialArray) => {
     }
     return getBestElement(domElementsFound);
 }
+const checkIfKeywordPresent = (listOfKeywords, domElement) => {
+    let listfWordsForWrap = constructAllKeywords(listOfKeywords);
+    for (var idx = 0; idx < listfWordsForWrap.length; idx++) {
+        if (domElement.id.includes(listfWordsForWrap[idx])) {
+            return true;
+        }
+    }
+    return false;
+}
 const calculateWeight = (domElement, weight, checkForButton) => {
     var minWeight = weight;
     if (checkForButton) {
         if (domElement.tagName === WORDS.BUTTON_TAG) {
-            minWeight += 20;
+            minWeight += 25;
         } else {
-            minWeight += 10;
+            minWeight += 15;
         }
-        for (var idx = 0; idx < ALL_KEYWORDS.length; idx++) {
-            if (domElement.id.includes(ALL_KEYWORDS[idx])) {
-                minWeight++;
-                break;
-            }
+        if (checkIfKeywordPresent(WORDS.COOKIE_DIV_KEYWORDS, domElement)) {
+            minWeight += 2;
         }
-        let listfWordsForAll = constructAllKeywords(WORDS.ALL);
-        for (var idx = 0; idx < listfWordsForAll.length; idx++) {
-            if (domElement.id.includes(listfWordsForAll[idx])) {
-                minWeight++;
-                break;
-            }
+        if (checkIfKeywordPresent(WORDS.ALL, domElement)) {
+            minWeight++;
         }
     }
-    let listfWordsForWrap = constructAllKeywords(WORDS.WRAP_KEYWORD);
-    for (var idx = 0; idx < listfWordsForWrap.length; idx++) {
-        if (domElement.id.includes(listfWordsForWrap[idx])) {
-            minWeight -= 10;
-            break;
-        }
+    if (checkIfKeywordPresent(WORDS.WRAP_KEYWORD, domElement)) {
+        minWeight -= 10;
     }
     return minWeight;
+}
+const verifyIfWrapDiv = (div) => {
+    if (checkIfKeywordPresent(WORDS.WRAP_KEYWORD, div)) {
+        if (div.children.length === 1 && div.id.includes(div.children[0].id)) {
+            return true;
+        }
+    }
+    return false;
 }
 const identifyBestFittingActionButton = (possibleOptionsMap, checkForButton) => {
     var elements = possibleOptionsMap.values();
@@ -166,14 +148,14 @@ const detectCookieMainDiv = () => {
     let index = 0;
     for (var position = 0; position < WORDS.FALLBACKMECHANISM_ELEMENTS.length; position++) {
         var domElement = WORDS.FALLBACKMECHANISM_ELEMENTS[position];
-        var currentWeight = maxWeight - position * 10;
         let maxWeight = WORDS.FALLBACKMECHANISM_ELEMENTS.length * 10;
+        var currentWeight = maxWeight - position * 10;
         ALL_KEYWORDS.forEach(keyword => {
             var xpath = "//div[contains(@" + domElement + ", '" + keyword + "')" + blackList;
             let result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
             for (let i = 0; i < result.snapshotLength; i++) {
                 var div = result.snapshotItem(i);
-                if (div.children.length === 1 && div.id.includes(div.children[0].id)) {
+                if (verifyIfWrapDiv(div)) {
                     div = div.children[0];
                 }
                 if (insertDomElementIfSuitable(divsMap.values(), div)) {
@@ -184,7 +166,7 @@ const detectCookieMainDiv = () => {
             }
         });
     }
-    if(divsMap.size > 1) {
+    if (divsMap.size > 1) {
         identifyBestFittingActionButton(divsMap);
     }
     return getBestElement(divsMap);
@@ -194,11 +176,10 @@ const detectCookieMainDiv = () => {
 
 let divsRetreived = detectCookieMainDiv();
 console.log(divsRetreived);
+if (divsRetreived) {
+    divsRetreived.style.border = "2px solid red";
+}
 
-// divsRetreived.forEach(div => {
-//     console.log("width: " + div.clientWidth + " height: " + div.clientHeight);
-//     div.style.border = "2px solid red";
-// });
 
 let rejectButtonsMap = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
 console.log("rejectButtonsMap");

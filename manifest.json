@@ -3,6 +3,27 @@
   "name": "Dark patterns recognition",
   "version": "1.0",
   "description": "Detects and highlights dark patterns in he cookie modal",
+  "permissions": [
+    "tabs",
+    "windows",
+    "system.display",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "32": "images/icon-32.png",
+      "48": "images/icon-48.png",
+      "128": "images/icon-128.png"
+    }
+  },
   "icons": {
     "16": "images/icon-16.png",
     "32": "images/icon-32.png",
@@ -17,7 +38,8 @@
       "matches": [
         "https://*/*",
         "https://*/"
-      ]
+      ],
+      "run_at": "document_end"
     }
   ]
 }
