@@ -2,7 +2,7 @@
 import { WORDS } from './constants.js';
 import _ from 'lodash';
 
-console.log(`Content script injected at ${new Date().toISOString()}`);
+// console.log(`Content script injected at ${new Date().toISOString()}`);
 // --------------------------------- Functions section ------------------------------
 const constructAllKeywords = (listOfInitialKeywords) => {
     let finalList = [];
@@ -176,28 +176,29 @@ const detectCookieMainDiv = () => {
 // --------------------------------- Functions section end ------------------------------
 
 let divsRetreived = detectCookieMainDiv();
-console.log(divsRetreived);
-if (divsRetreived) {
-    divsRetreived.style.border = "2px solid red";
-}
+// console.log(divsRetreived);
+// if (divsRetreived) {
+//     divsRetreived.style.border = "2px solid red";
+// }
 
 
-let rejectButtonsMap = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
-console.log("rejectButtonsMap");
-console.log(rejectButtonsMap);
+// let rejectButtonsMap = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
+// console.log("rejectButtonsMap");
+// console.log(rejectButtonsMap);
 
-let closebuttons = getSpecifiedElement(WORDS.CLOSE_BUTTON);
-console.log("closebuttons");
-console.log(closebuttons);
+// let closebuttons = getSpecifiedElement(WORDS.CLOSE_BUTTON);
+// console.log("closebuttons");
+// console.log(closebuttons);
 
-let preferencebuttons = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
-console.log("preferencebuttons");
-console.log(preferencebuttons);
-console.log(`Send message at ${new Date().toISOString()}`);
+// let preferencebuttons = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
+// console.log("preferencebuttons");
+// console.log(preferencebuttons);
+// console.log(`Send message at ${new Date().toISOString()}`);
+
 chrome.runtime.sendMessage({
-    action: "resizeWindow",
-    width: 500,
-    height: 500
-  }, function(response) {
-    console.log("Response from background:", response);
-  });
+    action: "divRetrieved",
+    id: divsRetreived.id,
+    class: divsRetreived.className,
+    divHeight: divsRetreived.clientHeight,
+    divWidth: divsRetreived.clientWidth
+});
