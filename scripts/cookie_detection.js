@@ -2,6 +2,7 @@
 import { WORDS } from './constants.js';
 import _ from 'lodash';
 
+console.log(`Content script injected at ${new Date().toISOString()}`);
 // --------------------------------- Functions section ------------------------------
 const constructAllKeywords = (listOfInitialKeywords) => {
     let finalList = [];
@@ -192,3 +193,11 @@ console.log(closebuttons);
 let preferencebuttons = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
 console.log("preferencebuttons");
 console.log(preferencebuttons);
+console.log(`Send message at ${new Date().toISOString()}`);
+chrome.runtime.sendMessage({
+    action: "resizeWindow",
+    width: 500,
+    height: 500
+  }, function(response) {
+    console.log("Response from background:", response);
+  });

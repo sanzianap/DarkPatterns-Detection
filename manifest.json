@@ -7,7 +7,8 @@
     "tabs",
     "windows",
     "system.display",
-    "scripting"
+    "scripting",
+    "activeTab"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -16,7 +17,6 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "images/icon-16.png",
       "32": "images/icon-32.png",
@@ -29,17 +29,5 @@
     "32": "images/icon-32.png",
     "48": "images/icon-48.png",
     "128": "images/icon-128.png"
-  },
-  "content_scripts": [
-    {
-      "js": [
-        "dist/content.bundle.js"
-      ],
-      "matches": [
-        "https://*/*",
-        "https://*/"
-      ],
-      "run_at": "document_end"
-    }
-  ]
+  }
 }
