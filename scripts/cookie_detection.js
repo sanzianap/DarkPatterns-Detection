@@ -182,23 +182,70 @@ let divsRetreived = detectCookieMainDiv();
 // }
 
 
-// let rejectButtonsMap = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
+let rejectButtonsMap = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
 // console.log("rejectButtonsMap");
 // console.log(rejectButtonsMap);
 
-// let closebuttons = getSpecifiedElement(WORDS.CLOSE_BUTTON);
+let closebuttons = getSpecifiedElement(WORDS.CLOSE_BUTTON);
 // console.log("closebuttons");
 // console.log(closebuttons);
 
-// let preferencebuttons = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
+let preferencebuttons = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
 // console.log("preferencebuttons");
 // console.log(preferencebuttons);
 // console.log(`Send message at ${new Date().toISOString()}`);
 
-chrome.runtime.sendMessage({
+let message = {
     action: "divRetrieved",
-    id: divsRetreived.id,
-    class: divsRetreived.className,
-    divHeight: divsRetreived.clientHeight,
-    divWidth: divsRetreived.clientWidth
-});
+    cookieDiv: {
+        id: divsRetreived.id,
+        class: divsRetreived.className,
+        divHeight: divsRetreived.clientHeight,
+        divWidth: divsRetreived.clientWidth,
+        borderStyle: divsRetreived.style.border
+    },
+    rejectButton: {
+        id: rejectButtonsMap.id,
+        class: rejectButtonsMap.className,
+        borderStyle: rejectButtonsMap.style.border
+    },
+    closeButton: {
+        id: closebuttons.id,
+        class: closebuttons.className,
+        borderStyle: closebuttons.style.border
+    },
+    preferenceButton: {
+        id: preferencebuttons.id,
+        class: preferencebuttons.className
+    }
+};
+var oldStyle = {
+    oldStyles: {
+        cookieDiv: {
+            id: divsRetreived.id,
+            class: divsRetreived.className,
+            divHeight: divsRetreived.clientHeight,
+            divWidth: divsRetreived.clientWidth,
+            borderStyle: divsRetreived.style.border
+        },
+        rejectButton: {
+            id: rejectButtonsMap.id,
+            class: rejectButtonsMap.className,
+            borderStyle: rejectButtonsMap.style.border
+        },
+        closeButton: {
+            id: closebuttons.id,
+            class: closebuttons.className,
+            borderStyle: closebuttons.style.border
+        },
+        preferenceButton: {
+            id: preferencebuttons.id,
+            class: preferencebuttons.className
+        }
+    }
+}
+chrome.storage.local.remove(["oldStyles"]);
+// should include tabId
+chrome.storage.local.set(oldStyle);
+
+chrome.runtime.sendMessage(message);

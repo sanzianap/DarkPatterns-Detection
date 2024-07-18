@@ -56,7 +56,7 @@ function updateWindow(windowId, modificationObj) {
 }
 
 function updateDivCookies(message) {
-  injectContentScriptWithMessage(tabId, 'scripts/percentge_computation.js', { action: 'colorDiv', divId: message.divId, per : message.per });
+  injectContentScriptWithMessage(tabId, 'scripts/percentge_computation.js', { action: 'colorDivs', divs: message.divs, per: message.per });
 }
 // When the user clicks on the extension action
 chrome.action.onClicked.addListener(async (tab) => {
@@ -89,16 +89,19 @@ chrome.action.onClicked.addListener(async (tab) => {
     });
     injectContentScript(tab.id, 'dist/content.bundle.js');
     tabId = tab.id;
+  } else {
+    //chrome.tabs.reload(tab.id, { bypassCache: true });
+    injectContentScriptWithMessage(tabId, 'scripts/percentge_computation.js', { action: 'undoStyles' });
   }
 });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "divRetrieved") {
     chrome.windows.getCurrent({}, function (window) {
-      let initialPercentage = (message.divHeight * message.divWidth) * 100 / (window.height * window.width);
+      let initialPercentage = (message.cookieDiv.divHeight * message.cookieDiv.divWidth) * 100 / (window.height * window.width);
       // console.log(` initialvaues ${initialValues.height}`);
       console.log(`Initial % ${initialPercentage}`);
       updateWindow(initialValues.windowId, { width: 360, height: 740, state: "normal" });
-      injectContentScriptWithMessage(tabId, 'scripts/percentge_computation.js', { action: 'computeNewPercentage', divId: message.id });
+      injectContentScriptWithMessage(tabId, 'scripts/percentge_computation.js', { action: 'computeNewPercentage', divs: message });
       //console.log(`newHeight ${responseFromScript.newHeight} newWidth ${responseFromScript.newWidth}`);
       // chrome.runtime.sendMessage({
       //   action: "computeNewPercentage",
@@ -109,8 +112,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // });
       let secondPercentage = (responseFromScript.newHeight * responseFromScript.newWidth) * 100 / (360 * 740);
       let finalPercentage = secondPercentage * 0.7 + (initialPercentage - secondPercentage) * (-1) * 0.3;
-      updateDivCookies({per: finalPercentage, divId: message.id});
+      updateDivCookies({ per: finalPercentage, divs: message });
       updateWindow(initialValues.windowId, initialValues);
+      // call resume.html
+      chrome.windows.create({
+        url: chrome.runtime.getURL("info/resume.html"),
+        type: "panel",
+        width: 400,
+        height: 300
+      });
+      // Indicate that we will send a response asynchronously
+      return true;
     });
   }
 });
