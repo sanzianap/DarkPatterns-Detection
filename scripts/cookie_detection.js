@@ -249,3 +249,14 @@ chrome.storage.local.remove(["oldStyles"]);
 chrome.storage.local.set(oldStyle);
 
 chrome.runtime.sendMessage(message);
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'clickPreferences') {
+        let preferencebutton = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
+        let closeBut;
+        preferencebutton.click();
+        if (preferencebutton) {
+            closeBut = getSpecifiedElement(WORDS.CLOSE_BUTTON);
+        }
+    }
+});

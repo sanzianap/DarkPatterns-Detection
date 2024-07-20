@@ -124,5 +124,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // Indicate that we will send a response asynchronously
       return true;
     });
+  } else if (message.action === "clickPreferences") {
+    injectContentScriptWithMessage(tabId, 'dist/content.bundle.js', {action: message.action});
+    sendResponse();
   }
 });

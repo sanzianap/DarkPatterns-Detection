@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
         dataElement = document.getElementById("buttonsToDisplay");
         if (!result.oldStyles.preferenceButton.id) {
             dataElement.style.visibility = "hidden";
+        } else {
+            dataElement.addEventListener("click", clickPreferencesButton);
         }
     });
 });
