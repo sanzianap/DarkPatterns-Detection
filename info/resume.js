@@ -28,7 +28,16 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function clickPreferencesButton() {
-    chrome.runtime.sendMessage({ action: 'clickPreferences' }, (response) => {
-        console.log("Response from content script:", response);
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length > 0) {
+            const currentWindowId = tabs[0].windowId;
+            //console.log(currentTabId);
+            chrome.storage.local.get([currentWindowId.toString()], (response) => {
+                if (response) {
+                    var localStorageValue = response[currentWindowId];
+                    chrome.runtime.sendMessage({ action: 'clickPreferencesFromP', tabIdToAction: localStorageValue.tabIdToAction });
+                }
+            });
+        }
     });
 }

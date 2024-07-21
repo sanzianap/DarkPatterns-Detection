@@ -1,8 +1,6 @@
-// THIS DOESN'T WORK FOR NOW; See .improvements/moduleType
 import { WORDS } from './constants.js';
 import _ from 'lodash';
 
-// console.log(`Content script injected at ${new Date().toISOString()}`);
 // --------------------------------- Functions section ------------------------------
 const constructAllKeywords = (listOfInitialKeywords) => {
     let finalList = [];
@@ -174,89 +172,68 @@ const detectCookieMainDiv = () => {
 }
 
 // --------------------------------- Functions section end ------------------------------
-
-let divsRetreived = detectCookieMainDiv();
-// console.log(divsRetreived);
-// if (divsRetreived) {
-//     divsRetreived.style.border = "2px solid red";
-// }
-
-
-let rejectButtonsMap = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
-// console.log("rejectButtonsMap");
-// console.log(rejectButtonsMap);
-
-let closebuttons = getSpecifiedElement(WORDS.CLOSE_BUTTON);
-// console.log("closebuttons");
-// console.log(closebuttons);
-
-let preferencebuttons = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
-// console.log("preferencebuttons");
-// console.log(preferencebuttons);
-// console.log(`Send message at ${new Date().toISOString()}`);
-
-let message = {
-    action: "divRetrieved",
-    cookieDiv: {
-        id: divsRetreived.id,
-        class: divsRetreived.className,
-        divHeight: divsRetreived.clientHeight,
-        divWidth: divsRetreived.clientWidth,
-        borderStyle: divsRetreived.style.border
-    },
-    rejectButton: {
-        id: rejectButtonsMap.id,
-        class: rejectButtonsMap.className,
-        borderStyle: rejectButtonsMap.style.border
-    },
-    closeButton: {
-        id: closebuttons.id,
-        class: closebuttons.className,
-        borderStyle: closebuttons.style.border
-    },
-    preferenceButton: {
-        id: preferencebuttons.id,
-        class: preferencebuttons.className
-    }
-};
-var oldStyle = {
-    oldStyles: {
-        cookieDiv: {
-            id: divsRetreived.id,
-            class: divsRetreived.className,
-            divHeight: divsRetreived.clientHeight,
-            divWidth: divsRetreived.clientWidth,
-            borderStyle: divsRetreived.style.border
-        },
-        rejectButton: {
-            id: rejectButtonsMap.id,
-            class: rejectButtonsMap.className,
-            borderStyle: rejectButtonsMap.style.border
-        },
-        closeButton: {
-            id: closebuttons.id,
-            class: closebuttons.className,
-            borderStyle: closebuttons.style.border
-        },
-        preferenceButton: {
-            id: preferencebuttons.id,
-            class: preferencebuttons.className
-        }
-    }
-}
-chrome.storage.local.remove(["oldStyles"]);
-// should include tabId
-chrome.storage.local.set(oldStyle);
-
-chrome.runtime.sendMessage(message);
-
+console.log("Content script has been injected.");
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'clickPreferences') {
-        let preferencebutton = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
-        let closeBut;
-        preferencebutton.click();
-        if (preferencebutton) {
-            closeBut = getSpecifiedElement(WORDS.CLOSE_BUTTON);
-        }
+    console.log(message.action);
+    switch (message.action) {
+        case 'getInitialDivs':
+            let cookiesDiv = detectCookieMainDiv();
+            let rejectButton = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
+            let closeButton = getSpecifiedElement(WORDS.CLOSE_BUTTON);
+            let preferenceButton = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
+
+            var oldStyle = {
+                cookieDiv: {
+                    id: cookiesDiv.id,
+                    class: cookiesDiv.className,
+                    divHeight: cookiesDiv.clientHeight,
+                    divWidth: cookiesDiv.clientWidth,
+                    borderStyle: cookiesDiv.style.border
+                },
+                rejectButton: {
+                    id: rejectButton.id,
+                    class: rejectButton.className,
+                    borderStyle: rejectButton.style.border
+                },
+                closeButton: {
+                    id: closeButton.id,
+                    class: closeButton.className,
+                    borderStyle: closeButton.style.border
+                },
+                preferenceButton: {
+                    id: preferenceButton.id,
+                    class: preferenceButton.className
+                }
+            }
+            // clear any values may be previously set
+            chrome.storage.local.remove([message.tabId.toString()]);
+
+            // should include tabId
+            var oldStyleById = {};
+            oldStyleById[message.tabId] = oldStyle;
+            chrome.storage.local.set(oldStyleById);
+            sendResponse(oldStyle);
+            console.log(oldStyle);
+            break;
+        case 'clickPreferences':
+            console.log(' I am starting to process');
+            if (_.isString(message.divs.preferenceButton.id) && _.isString(message.divs.preferenceButton.class)) {
+                let preferencebutton = document.getElementById(localStorageValue.preferenceButton.id);
+                let rejectButton = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
+                let closeButton = getSpecifiedElement(WORDS.CLOSE_BUTTON);
+                preferencebutton.click();
+                console.log("sending response");
+                sendResponse({
+                    divs: {
+                        rejectButton: { id: rejectButton.id, class: rejectButton.className },
+                        closeButton: { id: closeButton.id, class: closeButton.className }
+                    },
+                    tabId: message.tabIdToAction
+                });
+            }
+            sendResponse({
+                ceva: 'L-ai primit>'
+            });
+            break;
     }
 });

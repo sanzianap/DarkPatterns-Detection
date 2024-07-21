@@ -4,60 +4,114 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-let initialValues;
-let tabId;
-function injectContentScript(tabId, script) {
-  console.log(`Attempting to inject content script into tab: ${tabId} at ${new Date().toISOString()}`);
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    files: [script]
-  }, () => {
-    if (chrome.runtime.lastError) {
-      console.error(`Error injecting content script: ${chrome.runtime.lastError.message}`);
-    } else {
-      console.log(`Content script successfully injected into tab: ${tabId} at ${new Date().toISOString()}`);
-    }
-  });
-}
-let responseFromScript;
-function injectContentScriptWithMessage(tabId, script, message) {
-  console.log(`Attempting to inject content script into tab: ${tabId} at ${new Date().toISOString()}`);
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    files: [script]
-  }, () => {
-    if (chrome.runtime.lastError) {
-      console.error(`Error injecting content script: ${chrome.runtime.lastError.message}`);
-    } else {
-      console.log(`Content script successfully injected into tab: ${tabId} at ${new Date().toISOString()}`);
-      chrome.tabs.sendMessage(tabId, message, (response) => {
-        console.log("Response from content script:", response);
-        if (response) {
-          responseFromScript = response;
-        }
-      });
-    }
-  });
-}
-
 function updateWindow(windowId, modificationObj) {
   // Update the window
   chrome.windows.update(windowId, {
     width: modificationObj.width,
     height: modificationObj.height,
     state: 'normal'
-  }, function (updatedWindow) {
+  }, function () {
     if (chrome.runtime.lastError) {
       console.error('Update failed:', chrome.runtime.lastError.message);
     } else {
-      console.log('Window updated successfully:', updatedWindow);
+      console.log('Window updated successfully');
     }
   });
 }
 
-function updateDivCookies(message) {
+function updateDivCookies(message, tabId) {
   injectContentScriptWithMessage(tabId, 'scripts/percentge_computation.js', { action: 'colorDivs', divs: message.divs, per: message.per });
 }
+
+function processResponse(message, responseFromScript) {
+  switch (message.action) {
+    case 'getInitialDivs':
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length > 0) {
+          const currentTabId = tabs[0].id;
+          chrome.windows.getCurrent({}, function (window) {
+            let initialPercentage = (responseFromScript.cookieDiv.divHeight * responseFromScript.cookieDiv.divWidth) * 100 / (window.height * window.width);
+            // console.log(` initialvaues ${initialValues.height}`);
+            // console.log(`Initial % ${initialPercentage}`);
+            var key = 'initial_values_' + currentTabId.toString();
+            chrome.storage.local.get([key], (response) => {
+              if (response) {
+                var localStorageVariable = response[key];
+                localStorageVariable.initialPercentage = initialPercentage;
+                var newVariable = {};
+                newVariable[key] = localStorageVariable;
+                chrome.storage.local.set(newVariable);
+                updateWindow(localStorageVariable.windowId, { width: 360, height: 740, state: "normal" });
+                injectContentScriptWithMessage(localStorageVariable.tabId, 'scripts/percentge_computation.js', { action: 'computeNewPercentage', divs: responseFromScript });
+              }
+            });
+          });
+        }
+      });
+      break;
+    case 'clickPreferences':
+      console.log('I have found something', responseFromScript);
+      updateDivCookies(responseFromScript, responseFromScript.tabId);
+      break;
+    case 'computeNewPercentage':
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length > 0) {
+          const currentTabId = tabs[0].id;
+          var key = 'initial_values_' + currentTabId.toString();
+          chrome.storage.local.get([key], (response) => {
+            if (response) {
+              let secondPercentage = (responseFromScript.newHeight * responseFromScript.newWidth) * 100 / (360 * 740);
+              let finalPercentage = secondPercentage * 0.7 + Math.abs(response[key].initialPercentage - secondPercentage) * 0.3;
+              updateDivCookies({ per: finalPercentage, divs: message.divs }, response[key].tabId);
+              updateWindow(response[key].windowId, response[key]);
+              // call resume.html
+              chrome.windows.create({
+                url: chrome.runtime.getURL("info/resume.html"),
+                type: "panel",
+                width: 400,
+                height: 300
+              }, (newWindow) => {
+                // clear any values may be previously set
+                chrome.storage.local.remove([newWindow.id.toString()]);
+
+                // should include tabId
+                var popupDetails = {};
+                popupDetails[newWindow.id] = { tabIdToAction : response[key].tabId};
+                chrome.storage.local.set(popupDetails);
+                // sendResponse({ status: "popup opened", windowId: newWindow.id });
+              });
+            }
+          });
+        }
+      });
+      break;
+    case 'undoStyles':
+      // close the popup
+      break;
+    case 'colorDivs':
+      // Do I need something here?
+      break;
+  }
+}
+
+function injectContentScriptWithMessage(tabId, script, message) {
+  chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    files: [script]
+  }, () => {
+    if (chrome.runtime.lastError) {
+      console.error(`Error injecting content script: ${chrome.runtime.lastError.message}`);
+    } else {
+      chrome.tabs.sendMessage(tabId, message, (response) => {
+        if (response) {
+          processResponse(message, response);
+        }
+      });
+    }
+  });
+}
+
+
 // When the user clicks on the extension action
 chrome.action.onClicked.addListener(async (tab) => {
   // We retrieve the action badge to check if the extension is 'ON' or 'OFF'
@@ -72,7 +126,12 @@ chrome.action.onClicked.addListener(async (tab) => {
   });
   if (nextState === 'ON') {
     chrome.windows.getCurrent({}, function (window) {
-      initialValues = {
+      // clear any values may be previously set
+      var key = 'initial_values_' + tab.id.toString();
+      chrome.storage.local.remove([key]);
+
+      var objectToStore = {
+        tabId: tab.id,
         windowId: window.id,
         focused: window.focused,
         height: window.height,
@@ -81,51 +140,36 @@ chrome.action.onClicked.addListener(async (tab) => {
         top: window.top,
         width: window.width
       };
-      if (initialValues.state !== 'maximized') {
+      var initialValues = {};
+      initialValues[key] = objectToStore;
+      chrome.storage.local.set(initialValues);
+
+      if (objectToStore.state !== 'maximized') {
         updateWindow(window.id, { state: "maximized" });
       }
-      console.log(initialValues.height);
-      //updateWindow(window.id, { width: message.width, height: message.height, state: "normal"});
     });
-    injectContentScript(tab.id, 'dist/content.bundle.js');
-    tabId = tab.id;
+    injectContentScriptWithMessage(tab.id, 'dist/content.bundle.js', { action: 'getInitialDivs', tabId: tab.id });
   } else {
-    //chrome.tabs.reload(tab.id, { bypassCache: true });
-    injectContentScriptWithMessage(tabId, 'scripts/percentge_computation.js', { action: 'undoStyles' });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs.length > 0) {
+        const currentTabId = tabs[0].id;
+        var key = currentTabId.toString();
+        chrome.storage.local.get([key], (response) => {
+          if (response) {
+            injectContentScriptWithMessage(tab.id, 'scripts/percentge_computation.js', { action: 'undoStyles', divs: response[key] });
+          }
+        });
+      }
+    });
   }
 });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "divRetrieved") {
-    chrome.windows.getCurrent({}, function (window) {
-      let initialPercentage = (message.cookieDiv.divHeight * message.cookieDiv.divWidth) * 100 / (window.height * window.width);
-      // console.log(` initialvaues ${initialValues.height}`);
-      console.log(`Initial % ${initialPercentage}`);
-      updateWindow(initialValues.windowId, { width: 360, height: 740, state: "normal" });
-      injectContentScriptWithMessage(tabId, 'scripts/percentge_computation.js', { action: 'computeNewPercentage', divs: message });
-      //console.log(`newHeight ${responseFromScript.newHeight} newWidth ${responseFromScript.newWidth}`);
-      // chrome.runtime.sendMessage({
-      //   action: "computeNewPercentage",
-      //   id: message.id,
-      //   class: message.className
-      // }, function (response) {
-      //   console.log("Response from background:", response);
-      // });
-      let secondPercentage = (responseFromScript.newHeight * responseFromScript.newWidth) * 100 / (360 * 740);
-      let finalPercentage = secondPercentage * 0.7 + (initialPercentage - secondPercentage) * (-1) * 0.3;
-      updateDivCookies({ per: finalPercentage, divs: message });
-      updateWindow(initialValues.windowId, initialValues);
-      // call resume.html
-      chrome.windows.create({
-        url: chrome.runtime.getURL("info/resume.html"),
-        type: "panel",
-        width: 400,
-        height: 300
-      });
-      // Indicate that we will send a response asynchronously
-      return true;
-    });
-  } else if (message.action === "clickPreferences") {
-    injectContentScriptWithMessage(tabId, 'dist/content.bundle.js', {action: message.action});
-    sendResponse();
+  if (message.action === "clickPreferencesFromP") {
+    // chrome.storage.local.get([message.tabIdToAction.toString()], (response) => {
+      // if (response) {
+        var localStorageValue = "Ceva";
+        injectContentScriptWithMessage(message.tabIdToAction, 'dist/content.bundle.js', { action: 'clickPreferences', divs: localStorageValue });
+      // }
+    // });
   }
 });
