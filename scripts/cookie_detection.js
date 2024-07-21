@@ -184,36 +184,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
             var oldStyle = {
                 cookieDiv: {
-                    id: cookiesDiv.id,
-                    class: cookiesDiv.className,
-                    divHeight: cookiesDiv.clientHeight,
-                    divWidth: cookiesDiv.clientWidth,
-                    borderStyle: cookiesDiv.style.border
+                    id: cookiesDiv ? cookiesDiv.id : undefined,
+                    class: cookiesDiv ? cookiesDiv.className : undefined,
+                    divHeight: cookiesDiv ? cookiesDiv.clientHeight : undefined,
+                    divWidth: cookiesDiv ? cookiesDiv.clientWidth : undefined,
+                    borderStyle: cookiesDiv ? cookiesDiv.style.border : undefined
                 },
                 rejectButton: {
-                    id: rejectButton.id,
-                    class: rejectButton.className,
-                    borderStyle: rejectButton.style.border
+                    id: rejectButton ? rejectButton.id : undefined,
+                    class: rejectButton ? rejectButton.className : undefined,
+                    borderStyle: rejectButton ? rejectButton.style.border : undefined
                 },
                 closeButton: {
-                    id: closeButton.id,
-                    class: closeButton.className,
-                    borderStyle: closeButton.style.border
+                    id: closeButton ? closeButton.id : undefined,
+                    class: closeButton ? closeButton.className : undefined,
+                    borderStyle: closeButton ? closeButton.style.border : undefined
                 },
                 preferenceButton: {
-                    id: preferenceButton.id,
-                    class: preferenceButton.className
+                    id: preferenceButton ? preferenceButton.id : undefined,
+                    class: preferenceButton ? preferenceButton.className : undefined
                 }
             }
             // clear any values may be previously set
             chrome.storage.local.remove([message.tabId.toString()]);
-
             // should include tabId
             var oldStyleById = {};
             oldStyleById[message.tabId] = oldStyle;
             chrome.storage.local.set(oldStyleById);
             sendResponse(oldStyle);
-            console.log(oldStyle);
             break;
         case 'clickPreferences':
             if (_.isString(message.divs.preferenceButton.id) && _.isString(message.divs.preferenceButton.class)) {
@@ -223,10 +221,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 prefBut.click();
                 console.log(message.tabId);
                 sendResponse({
-                    ceva: 'L-ai primit si acuma ????',
                     divs: {
-                        rejectButton: { id: rejectButton.id, class: rejectButton.className },
-                        closeButton: { id: closeButton.id, class: closeButton.className }
+                        rejectButton: {
+                            id: rejectButton ? rejectButton.id : undefined,
+                            class: rejectButton ? rejectButton.className : undefined
+                        },
+                        closeButton: {
+                            id: closeButton ? closeButton.id : undefined,
+                            class: closeButton ? closeButton.className : undefined
+                        }
                     },
                     tabId: message.tabId
                 });

@@ -1,57 +1,97 @@
+function prepareSelectoForElement(element) {
+    if (element.id) {
+        return '#' + element.id;
+    } else if (element.class) {
+        let selector = '';
+        let classArray = element.class.split(' ');
+        classArray.forEach(function (cl) {
+            selector += '.' + cl;
+        });
+        return selector;
+    }
+    return;
+}
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('I found the message ');
     console.log(message);
     if (message.action === "computeNewPercentage") {
-        const cookieDiv = document.querySelector("#" + message.divs.cookieDiv.id);
-        sendResponse({ newHeight: cookieDiv.clientHeight, newWidth: cookieDiv.clientWidth });
-    } else if (message.action === 'colorDivs') {
-        console.log('Hai c-am ajuns si aici');
         if (message.divs.cookieDiv) {
-            const cookieDiv = document.querySelector("#" + message.divs.cookieDiv.id);
-        
-            if (cookieDiv) {
-                if (message.per <= 25) {
-                    cookieDiv.style.border = "2px solid green";
-                } else if (message.per <= 50) {
-                    cookieDiv.style.border = "2px solid yellow";
-                } else if (message.per <= 75) {
-                    cookieDiv.style.border = "2px solid orange";
-                } else {
-                    cookieDiv.style.border = "2px solid red";
+            let selector = prepareSelectoForElement(message.divs.cookieDiv);
+            if (selector) {
+                const cookieDiv = document.querySelector(selector);
+                sendResponse({ newHeight: cookieDiv.clientHeight, newWidth: cookieDiv.clientWidth });
+            }
+        }
+        sendResponse({ found: false});
+    } else if (message.action === 'colorDivs') {
+        if (message.divs.cookieDiv) {
+            let selector = prepareSelectoForElement(message.divs.cookieDiv);
+            if (selector) {
+                const cookieDiv = document.querySelector(selector);
+
+                if (cookieDiv) {
+                    if (message.per <= 25) {
+                        cookieDiv.style.border = "2px solid green";
+                    } else if (message.per <= 50) {
+                        cookieDiv.style.border = "2px solid yellow";
+                    } else if (message.per <= 75) {
+                        cookieDiv.style.border = "2px solid orange";
+                    } else {
+                        cookieDiv.style.border = "2px solid red";
+                    }
                 }
             }
         }
-        
-        console.log(message.divs.rejectButton.id);
-        const rejectButton = document.querySelector('#' + message.divs.rejectButton.id);
-        console.log(rejectButton);
-        if (rejectButton) {
-            console.log('Aha');
-            rejectButton.style.border = "2px solid green";
+
+        if (message.divs.rejectButton) {
+            selector = prepareSelectoForElement(message.divs.rejectButton);
+            if (selector) {
+                const rejectButton = document.querySelector(selector);
+                if (rejectButton) {
+                    rejectButton.style.border = "2px solid green";
+                }
+            }
         }
-        
-        const closeButton = document.querySelector('#' + message.divs.closeButton.id);
-        if (closeButton) {
-            console.log('Aham');
-            closeButton.style.border = "2px solid red";
+
+        if (message.divs.closeButton) {
+            selector = prepareSelectoForElement(message.divs.closeButton);
+            if (selector) {
+                const closeButton = document.querySelector(selector);
+                if (closeButton) {
+                    closeButton.style.border = "2px solid red";
+                }
+            }
         }
         sendResponse({ ok: true });
     } else if (message.action === 'undoStyles') {
         var localStorageValue = message.divs;
-        const cookieDiv = document.querySelector("#" + localStorageValue.cookieDiv.id);
-        console.log(cookieDiv.style);
-        if (cookieDiv) {
-            cookieDiv.style.border = localStorageValue.cookieDiv.borderStyle;
+        if (localStorageValue.cookieDiv) {
+            let selector = prepareSelectoForElement(localStorageValue.cookieDiv);
+            if (selector) {
+                const cookieDiv = document.querySelector(selector);
+                if (cookieDiv) {
+                    cookieDiv.style.border = localStorageValue.cookieDiv.borderStyle;
+                }
+            }
+        }
+        if (localStorageValue.rejectButton) {
+            selector = prepareSelectoForElement(localStorageValue.rejectButton);
+            if (selector) {
+                const rejectButton = document.querySelector(selector);
+                if (rejectButton) {
+                    rejectButton.style.border = localStorageValue.rejectButton.borderStyle;
+                }
+            }
         }
 
-        const rejectButton = document.querySelector('#' + localStorageValue.rejectButton.id);
-        if (rejectButton) {
-            rejectButton.style.border = localStorageValue.rejectButton.borderStyle;
-        }
-
-        const closeButton = document.querySelector('#' + localStorageValue.closeButton.id);
-        if (closeButton) {
-            closeButton.style.border = localStorageValue.closeButton.borderStyle;
+        if (localStorageValue.closeButton) {
+            selector = prepareSelectoForElement(localStorageValue.closeButton);
+            if (selector) {
+                const closeButton = document.querySelector(selector);
+                if (closeButton) {
+                    closeButton.style.border = localStorageValue.closeButton.borderStyle;
+                }
+            }
         }
 
         sendResponse({ ok: true });

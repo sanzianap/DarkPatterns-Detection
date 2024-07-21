@@ -54,6 +54,7 @@ function processResponse(message, responseFromScript) {
       updateDivCookies(responseFromScript, responseFromScript.tabId);
       break;
     case 'computeNewPercentage':
+      console.log('Am ajuns inapoi in background.js');
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length > 0) {
           const currentTabId = tabs[0].id;
@@ -78,6 +79,9 @@ function processResponse(message, responseFromScript) {
                 var popupDetails = {};
                 popupDetails[newWindow.id] = { tabIdToAction : response[key].tabId};
                 chrome.storage.local.set(popupDetails);
+                console.log(`resume.html cu ${newWindow.id} from ${response[key].tabId}`);
+                console.log(`Am pus in local storage ${popupDetails}`);
+                console.log(popupDetails);
                 // sendResponse({ status: "popup opened", windowId: newWindow.id });
               });
             }
