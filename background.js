@@ -10,13 +10,28 @@ function updateWindow(windowId, modificationObj) {
     width: modificationObj.width,
     height: modificationObj.height,
     state: 'normal'
-  }, function () {
-    if (chrome.runtime.lastError) {
-      console.error('Update failed:', chrome.runtime.lastError.message);
-    } else {
-      console.log('Window updated successfully');
+  });
+}
+
+function clearLocalStorage(tabId) {
+  var key_initialValues = 'initial_values_' + tabId;
+  var key_tabId = tabId.toString();
+  var key_popups = 'popups_' + tabId;
+
+  chrome.storage.local.remove([key_initialValues]);
+  chrome.storage.local.remove([key_tabId]);
+  chrome.storage.local.get([key_popups], (response) => {
+    if (response) {
+      let arrayPop = response[key_popups];
+      if (arrayPop && arrayPop.length > 0) {
+        arrayPop.forEach(popupId => {
+          chrome.storage.local.remove([popupId.toString()]);
+          chrome.windows.remove(popupId);
+        });
+      }
     }
   });
+  chrome.storage.local.remove([key_popups]);
 }
 
 function updateDivCookies(message, tabId) {
@@ -31,8 +46,6 @@ function processResponse(message, responseFromScript) {
           const currentTabId = tabs[0].id;
           chrome.windows.getCurrent({}, function (window) {
             let initialPercentage = (responseFromScript.cookieDiv.divHeight * responseFromScript.cookieDiv.divWidth) * 100 / (window.height * window.width);
-            // console.log(` initialvaues ${initialValues.height}`);
-            // console.log(`Initial % ${initialPercentage}`);
             var key = 'initial_values_' + currentTabId.toString();
             chrome.storage.local.get([key], (response) => {
               if (response) {
@@ -50,21 +63,20 @@ function processResponse(message, responseFromScript) {
       });
       break;
     case 'clickPreferences':
-      console.log('I have found something', responseFromScript);
       updateDivCookies(responseFromScript, responseFromScript.tabId);
       break;
     case 'computeNewPercentage':
-      console.log('Am ajuns inapoi in background.js');
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length > 0) {
           const currentTabId = tabs[0].id;
-          var key = 'initial_values_' + currentTabId.toString();
+          let key = 'initial_values_' + currentTabId.toString();
           chrome.storage.local.get([key], (response) => {
             if (response) {
+              const initialValues = response[key];
               let secondPercentage = (responseFromScript.newHeight * responseFromScript.newWidth) * 100 / (360 * 740);
-              let finalPercentage = secondPercentage * 0.7 + Math.abs(response[key].initialPercentage - secondPercentage) * 0.3;
-              updateDivCookies({ per: finalPercentage, divs: message.divs }, response[key].tabId);
-              updateWindow(response[key].windowId, response[key]);
+              let finalPercentage = secondPercentage * 0.7 + Math.abs(initialValues.initialPercentage - secondPercentage) * 0.3;
+              updateDivCookies({ per: finalPercentage, divs: message.divs }, initialValues.tabId);
+              updateWindow(initialValues.windowId, initialValues);
               // call resume.html
               chrome.windows.create({
                 url: chrome.runtime.getURL("info/resume.html"),
@@ -77,12 +89,25 @@ function processResponse(message, responseFromScript) {
 
                 // should include tabId
                 var popupDetails = {};
-                popupDetails[newWindow.id] = { tabIdToAction : response[key].tabId};
+                popupDetails[newWindow.id] = { tabIdToAction: initialValues.tabId };
                 chrome.storage.local.set(popupDetails);
-                console.log(`resume.html cu ${newWindow.id} from ${response[key].tabId}`);
-                console.log(`Am pus in local storage ${popupDetails}`);
-                console.log(popupDetails);
-                // sendResponse({ status: "popup opened", windowId: newWindow.id });
+
+                var keyPopup = "popups_" + initialValues.tabId.toString();
+                chrome.storage.local.get([keyPopup], (response) => {
+                  if (response) {
+                    var arrayWithPopups = response[keyPopup];
+                    if (!arrayWithPopups) {
+                      var newVar = {};
+                      newVar[keyPopup] = [newWindow.id];
+                      chrome.storage.local.set(newVar);
+                    } else {
+                      arrayWithPopups.push(newWindow.id);
+                      var newVar = {};
+                      newVar[keyPopup] = arrayWithPopups;
+                      chrome.storage.local.set(newVar);
+                    }
+                  }
+                });
               });
             }
           });
@@ -163,6 +188,7 @@ chrome.action.onClicked.addListener(async (tab) => {
             injectContentScriptWithMessage(tab.id, 'scripts/percentge_computation.js', { action: 'undoStyles', divs: response[key] });
           }
         });
+        clearLocalStorage(currentTabId);
       }
     });
   }
@@ -176,4 +202,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     });
   }
+});
+
+chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
+  clearLocalStorage(tabId);
 });

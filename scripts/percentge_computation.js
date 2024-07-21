@@ -12,8 +12,6 @@ function prepareSelectoForElement(element) {
     return;
 }
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('I found the message ');
-    console.log(message);
     if (message.action === "computeNewPercentage") {
         if (message.divs.cookieDiv) {
             let selector = prepareSelectoForElement(message.divs.cookieDiv);

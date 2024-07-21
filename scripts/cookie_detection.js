@@ -90,7 +90,7 @@ const getSpecifiedElement = (initialArray) => {
 const checkIfKeywordPresent = (listOfKeywords, domElement) => {
     let listfWordsForWrap = constructAllKeywords(listOfKeywords);
     for (var idx = 0; idx < listfWordsForWrap.length; idx++) {
-        if (domElement.id.includes(listfWordsForWrap[idx])) {
+        if (domElement.id.includes(listfWordsForWrap[idx]) || domElement.className.includes(listfWordsForWrap[idx])) {
             return true;
         }
     }
@@ -126,6 +126,7 @@ const verifyIfWrapDiv = (div) => {
 }
 const identifyBestFittingActionButton = (possibleOptionsMap, checkForButton) => {
     var elements = possibleOptionsMap.values();
+    console.log(possibleOptionsMap);
     let currentElement;
     while (true) {
         currentElement = elements.next();
@@ -171,17 +172,43 @@ const detectCookieMainDiv = () => {
     return getBestElement(divsMap);
 }
 
+const checkIfCloseButtonHidden = (element) => {
+    while (element) {
+        console.log(element);
+        // Get computed style of the current element
+        let style = window.getComputedStyle(element);
+        console.log(style.visibility);
+        
+        // Check if the visibility property is hidden
+        if (style.visibility === 'hidden' || style.display === 'none') {
+          return true;
+        }
+        
+        // Move to the parent element
+        element = element.parentElement;
+      }
+}
+
 // --------------------------------- Functions section end ------------------------------
-console.log("Content script has been injected.");
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log(message.action);
     switch (message.action) {
         case 'getInitialDivs':
             let cookiesDiv = detectCookieMainDiv();
             let rejectButton = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
             let closeButton = getSpecifiedElement(WORDS.CLOSE_BUTTON);
+            //console.log(checkIfCloseButtonHidden(closeButton));
             let preferenceButton = getSpecifiedElement(WORDS.CUSTOMISE_COOKIE_BUTTON);
-
+            if (cookiesDiv) {
+                if (rejectButton && !cookiesDiv.contains(rejectButton)) {
+                    rejectButton = undefined;
+                }
+                if (closeButton && !cookiesDiv.contains(closeButton) || checkIfCloseButtonHidden(closeButton)) {
+                    closeButton = undefined;
+                }
+                if (preferenceButton && !cookiesDiv.contains(preferenceButton)) {
+                    preferenceButton = undefined;
+                }
+            }
             var oldStyle = {
                 cookieDiv: {
                     id: cookiesDiv ? cookiesDiv.id : undefined,
@@ -219,7 +246,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 let rejectButton = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
                 let closeButton = getSpecifiedElement(WORDS.CLOSE_BUTTON);
                 prefBut.click();
-                console.log(message.tabId);
                 sendResponse({
                     divs: {
                         rejectButton: {
