@@ -216,24 +216,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             console.log(oldStyle);
             break;
         case 'clickPreferences':
-            console.log(' I am starting to process');
             if (_.isString(message.divs.preferenceButton.id) && _.isString(message.divs.preferenceButton.class)) {
-                let preferencebutton = document.getElementById(localStorageValue.preferenceButton.id);
+                let prefBut = document.getElementById(message.divs.preferenceButton.id);
                 let rejectButton = getSpecifiedElement(WORDS.REJECT_BUTTON_KEYWORDS);
                 let closeButton = getSpecifiedElement(WORDS.CLOSE_BUTTON);
-                preferencebutton.click();
-                console.log("sending response");
+                prefBut.click();
+                console.log(message.tabId);
                 sendResponse({
+                    ceva: 'L-ai primit si acuma ????',
                     divs: {
                         rejectButton: { id: rejectButton.id, class: rejectButton.className },
                         closeButton: { id: closeButton.id, class: closeButton.className }
                     },
-                    tabId: message.tabIdToAction
+                    tabId: message.tabId
                 });
             }
-            sendResponse({
-                ceva: 'L-ai primit>'
-            });
             break;
     }
 });

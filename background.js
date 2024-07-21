@@ -165,11 +165,11 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "clickPreferencesFromP") {
-    // chrome.storage.local.get([message.tabIdToAction.toString()], (response) => {
-      // if (response) {
-        var localStorageValue = "Ceva";
-        injectContentScriptWithMessage(message.tabIdToAction, 'dist/content.bundle.js', { action: 'clickPreferences', divs: localStorageValue });
-      // }
-    // });
+    chrome.storage.local.get([message.tabIdToAction.toString()], (response) => {
+      if (response) {
+        var localStorageValue = response[message.tabIdToAction.toString()];
+        injectContentScriptWithMessage(message.tabIdToAction, 'dist/content.bundle.js', { action: 'clickPreferences', divs: localStorageValue, tabId: message.tabIdToAction });
+      }
+    });
   }
 });
