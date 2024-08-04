@@ -29,13 +29,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 if (cookieDiv) {
                     if (message.per <= 25) {
-                        cookieDiv.style.border = "2px solid green";
+                        cookieDiv.style.border = "10px solid green";
                     } else if (message.per <= 50) {
-                        cookieDiv.style.border = "2px solid yellow";
+                        cookieDiv.style.border = "10px solid yellow";
                     } else if (message.per <= 75) {
-                        cookieDiv.style.border = "2px solid orange";
+                        cookieDiv.style.border = "10px solid orange";
                     } else {
-                        cookieDiv.style.border = "2px solid red";
+                        cookieDiv.style.border = "10px solid red";
                     }
                 }
             }
@@ -46,7 +46,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (selector) {
                 const rejectButton = document.querySelector(selector);
                 if (rejectButton) {
-                    rejectButton.style.border = "2px solid green";
+                    rejectButton.style.border = "5px solid green";
                 }
             }
         }

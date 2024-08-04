@@ -9,13 +9,27 @@
             padding: 10px;
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
+<style>
+    #cookie_stats,
+    #rejectButton_stats,
+    #closeButton_stats,
+    #buttonsToDisplay {
+        padding: 5px 2px;
+    }
+</style>
 
 <body>
-    <div id="cookie_stats"></div>
-    <div id="rejectButton_stats"></div>
-    <div id="closeButton_stats"></div>
-    <button id="buttonsToDisplay">YES</button>
+    <span style="display:inline"><div id="cookie_stats"></div><i class="fa fa-caret-down"></i></span>
+    <div id="rejectButton_stats"></div><i class="fa fa-caret-down"></i>
+    <div id="closeButton_stats"></div><i class="fa fa-caret-down"></i>
+    <span id="buttonsToDisplay">
+        <div id="buttonsToDisplay">Do you want to continue looking for the refect button by actioning the setting
+            button?</div>
+        <button id="buttonsToDisplay">YES</button>
+    </span>
+
     <script src="resume.js"></script>
 </body>
 
